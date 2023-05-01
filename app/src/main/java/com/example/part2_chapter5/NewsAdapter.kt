@@ -8,18 +8,21 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.part2_chapter5.databinding.ItemNewsBinding
 
-class NewsAdapter:ListAdapter<NewsModel, NewsAdapter.ViewHolder>(diffUtil) {
+class NewsAdapter(private val onClick: (String) -> Unit)
+    :ListAdapter<NewsModel, NewsAdapter.ViewHolder>(diffUtil) {
 
     inner class ViewHolder(private val binding: ItemNewsBinding): RecyclerView.ViewHolder(binding.root) {
 
         // 복습
         fun bind(item: NewsModel){
             binding.titleTextViews.text = item.title
+            binding.root.setOnClickListener{
+                onClick(item.link)
+            }
 
             Glide.with(binding.thumbnailImageView)
                 .load(item.imageUrl)
                 .into(binding.thumbnailImageView)
-
         }
     }
 

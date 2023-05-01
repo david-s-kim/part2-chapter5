@@ -1,6 +1,6 @@
 package com.example.part2_chapter5
 
-//복습
+
 data class NewsModel(
     val title: String,
     val link: String,

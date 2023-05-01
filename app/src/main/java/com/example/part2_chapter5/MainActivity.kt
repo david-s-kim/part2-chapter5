@@ -1,8 +1,13 @@
 package com.example.part2_chapter5
 
+import android.content.Context
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.part2_chapter5.databinding.ActivityMainBinding
 import com.tickaroo.tikxml.TikXml
@@ -33,21 +38,95 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        newsAdapter = NewsAdapter()
+        // 복습
+        newsAdapter = NewsAdapter { url ->
+            startActivity(Intent(this, WebViewActivity::class.java).apply {
+                putExtra("url", url)
+            })
+        }
+
+        val newsService = retrofit.create(NewsService::class.java)
 
         binding.newsRecyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = newsAdapter
         }
 
+
         // 복습
-        val newsService = retrofit.create(NewsService::class.java)
-        newsService.mainFeed().enqueue(object : Callback<NewsRss> {
+        binding.feedChip.setOnClickListener {
+            binding.chipGroup.clearCheck()
+            binding.feedChip.isChecked = true
+
+            newsService.mainFeed().submitList()
+        }
+
+        binding.politicsChip.setOnClickListener {
+            binding.chipGroup.clearCheck()
+            binding.politicsChip.isChecked = true
+
+            newsService.politicsNews().submitList()
+
+        }
+
+        binding.economyChip.setOnClickListener {
+            binding.chipGroup.clearCheck()
+            binding.economyChip.isChecked = true
+
+            newsService.economyNews().submitList()
+        }
+
+        binding.societyChip.setOnClickListener {
+            binding.chipGroup.clearCheck()
+            binding.societyChip.isChecked = true
+
+            newsService.societyNews().submitList()
+        }
+
+        binding.itChip.setOnClickListener {
+            binding.chipGroup.clearCheck()
+            binding.itChip.isChecked = true
+
+            newsService.itNews().submitList()
+        }
+
+        binding.sportChip.setOnClickListener {
+            binding.chipGroup.clearCheck()
+            binding.sportChip.isChecked = true
+
+            newsService.sportNews().submitList()
+        }
+
+        binding.searchTextInputEditText.setOnEditorActionListener { v, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                binding.chipGroup.clearCheck()
+
+                binding.searchTextInputEditText.clearFocus()
+
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(v.windowToken, 0)
+
+                newsService.search(binding.searchTextInputEditText.text.toString()).submitList()
+
+                return@setOnEditorActionListener true
+            }
+            return@setOnEditorActionListener false
+        }
+
+        binding.feedChip.isChecked = true
+        newsService.mainFeed().submitList()
+    }
+
+
+    private fun Call<NewsRss>.submitList() {
+        enqueue(object : Callback<NewsRss> {
             override fun onResponse(call: Call<NewsRss>, response: Response<NewsRss>) {
                 Log.e("MainActivity", "${response.body()?.channel?.items}")
 
                 val list = response.body()?.channel?.items.orEmpty().transform()
                 newsAdapter.submitList(list)
+
+                binding.notFoundView.isVisible = list.isEmpty()
 
                 list.forEachIndexed { index, news ->
                     Thread {
@@ -69,14 +148,11 @@ class MainActivity : AppCompatActivity() {
 
                     }.start()
                 }
-
-
             }
 
             override fun onFailure(call: Call<NewsRss>, t: Throwable) {
                 t.printStackTrace()
             }
         })
-
     }
 }
